@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Make executable with: chmod +x ./dev
+
+set -euo pipefail
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+
+COMPOSE=(
+    docker compose
+    --project-directory "$PWD"
+    -f "$PWD/docker-compose.yml"
+)
+
+if (( $# == 0 )); then
+    exec "${COMPOSE[@]}" ps
+fi
+
+command=$1
+shift
+
+case "$command" in
+    help|-h|--help)
+        cat <<'HELP'
+Usage: ./dev [command] [arguments]
+
+  help                  Show this reference
+  start | up            Start n8n in the background
+  foreground            Start n8n in the foreground
+  stop | down           Stop n8n while preserving its data
+  restart               Restart n8n
+  logs                  Follow n8n logs
+  status | ps           Show service status
+  open                  Open n8n in the browser
+  shell | sh | ssh       Open a shell inside the n8n container
+  n8n [arguments]       Run an n8n CLI command
+  config                Show the resolved Compose configuration
+  check                 Validate the Compose configuration
+  containers            Show project containers
+  volumes               Show project volumes
+
+With no command, the current service status is shown.
+HELP
+        ;;
+
+    start|up)
+        exec "${COMPOSE[@]}" up -d "$@"
+        ;;
+
+    foreground)
+        exec "${COMPOSE[@]}" up "$@"
+        ;;
+
+    stop|down)
+        exec "${COMPOSE[@]}" down "$@"
+        ;;
+
+    restart)
+        "${COMPOSE[@]}" down
+        exec "${COMPOSE[@]}" up -d "$@"
+        ;;
+
+    logs)
+        exec "${COMPOSE[@]}" logs -f "$@" n8n
+        ;;
+
+    status|ps)
+        exec "${COMPOSE[@]}" ps "$@"
+        ;;
+
+    open)
+        xdg-open http://localhost:5678 >/dev/null 2>&1
+        ;;
+
+    shell|sh|ssh)
+        exec "${COMPOSE[@]}" exec n8n sh "$@"
+        ;;
+
+    n8n)
+        exec "${COMPOSE[@]}" exec n8n n8n "$@"
+        ;;
+
+    config)
+        exec "${COMPOSE[@]}" config "$@"
+        ;;
+
+    check)
+        exec "${COMPOSE[@]}" config --quiet "$@"
+        ;;
+
+    containers)
+        exec "${COMPOSE[@]}" ps -a "$@"
+        ;;
+
+    volumes)
+        exec docker volume ls \
+            --filter "label=com.docker.compose.project=n8n-ai-clarification-workflow" \
+            "$@"
+        ;;
+
+    *)
+        echo "Unknown command: $command" >&2
+        echo "Run ./dev help to see the available commands." >&2
+        exit 1
+        ;;
+esac

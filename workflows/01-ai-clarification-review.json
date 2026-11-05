@@ -1,0 +1,319 @@
+{
+  "name": "01 - AI clarification review",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "0eba210c-e3e9-46e7-b8af-7328cc2f9f24",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80e7dc49-3a54-4076-bc34-3a91b6dae752",
+              "name": "conversation_reference",
+              "value": "SAMPLE-001",
+              "type": "string"
+            },
+            {
+              "id": "17b0b7bb-c509-46f7-85a6-6c723a2b8faa",
+              "name": "conversation_id",
+              "value": "SAMPLE-001",
+              "type": "string"
+            },
+            {
+              "id": "17dd0524-2bc5-4b27-8ff7-26848ca4f9ea",
+              "name": "clarification_text",
+              "value": "Does the plate require an M5 through-thread?",
+              "type": "string"
+            },
+            {
+              "id": "43d4940f-e547-48cd-8514-96568ca8ff17",
+              "name": "attachment_status",
+              "value": "processed",
+              "type": "string"
+            },
+            {
+              "id": "034b4c21-672c-41ac-96ab-f6f02d1b4dd1",
+              "name": "attachment_context",
+              "value": "Drawing note: M5 THRU ALL",
+              "type": "string"
+            },
+            {
+              "id": "17b7ea96-59be-4e4e-af34-627cdd8ee89f",
+              "name": "order_context_status",
+              "value": "not_supplied",
+              "type": "string"
+            },
+            {
+              "id": "3ba28945-798b-4e5b-91af-6f7b53c578c7",
+              "name": "order_context",
+              "value": "No order context supplied.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        160,
+        0
+      ],
+      "id": "3e3db186-778d-4d92-a3a8-8cc0db9869ab",
+      "name": "Sample Clarification Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const input = item.json;\n\n  return {\n    json: {\n      test_id: input.test_id ?? null,\n      provenance: input.provenance ?? null,\n      source_references: Array.isArray(input.source_references)\n        ? input.source_references\n        : [],\n      expected_classification: input.expected_classification ?? null,\n      expected_rationale: input.expected_rationale ?? null,\n\n      conversation_reference: (input.conversation_reference ?? '').trim(),\n      conversation_id: (input.conversation_id ?? '').trim(),\n      clarification_text: (input.clarification_text ?? '').trim(),\n      attachment_status: (input.attachment_status ?? '').trim(),\n      attachment_context: (input.attachment_context ?? '').trim(),\n      order_context_status: (input.order_context_status ?? '').trim(),\n      order_context: (input.order_context ?? '').trim()\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "a914913d-c8e2-48df-911b-e048ba63a87c",
+      "name": "Prepare Classification Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Review this manufacturing supplier clarification.\n\nConversation reference:\n{{ $json.conversation_reference }}\n\nSupplier clarification:\n{{ $json.clarification_text }}\n\nOpening file-message context:\nStatus: {{ $json.attachment_status }}\n{{ $json.attachment_context }}\n\nTrusted order and technical context:\nStatus: {{ $json.order_context_status }}\n{{ $json.order_context }}\n\nClassify it as exactly one of:\n\nResolved — The answer exists clearly in the supplied trusted context and no new decision is required.\n\nAssisted — Relevant evidence exists, but ambiguity or technical risk requires review by a technical specialist.\n\nCustomer Required — A new customer decision, approval, deviation acceptance or missing information is required.\n\nRules:\n- Use only the supplied information.\n- Do not assume the contents of unavailable files.\n- Do not invent technical requirements.\n- If trusted evidence is unavailable, the case cannot be Resolved.\n- Do not treat the historical customer response as evidence.\n- Identify only evidence explicitly supplied or explicitly described as unavailable.\n- Do not list evidence that might theoretically be useful.\n- Do not invent manufacturing, quality, inspection, escalation or documentation requirements.\n- Do not recommend technical procedures unless they appear in the supplied trusted context.\n- Do not answer or approve anything on the customer's behalf.\n- Keep the reason brief.\n- Keep missing_evidence to one short sentence.\n- Keep proposed_action to one short sentence describing only the minimum safe routing action.\n- For Customer Required, request only the explicit decision contained in the supplier clarification.\n- In missing_evidence, list only unavailable source material or trusted context; do not list a decision as evidence.\n- Do not infer that referenced file messages contain the technical sources mentioned in the clarification.\n- Treat attachment context and clarification text as separate evidence unless their relationship is explicitly supplied.\n- Do not request new files, documents, measurements or deliverables unless the supplier explicitly requested them.\n- For Resolved cases, state only the answer explicitly supported by the trusted context and preserve exact technical values and units.\n- For Resolved cases, proposed_action should describe sending that supported answer to the supplier.\n- For Assisted cases, identify the specific ambiguity or conflict in the supplied trusted evidence.\n- For Assisted cases, proposed_action should route the identified evidence to a technical specialist for review without choosing an answer.\n- Do not route a case to the customer when a technical specialist can first assess an ambiguity within the available trusted evidence.\n- If two available technical sources conflict and no explicit source-precedence rule resolves the conflict, classify the case as Assisted.\n- A source being described as trusted does not by itself establish that it overrides another available technical source.\n- A case with an unresolved conflict between available technical sources must not be classified as Resolved.\n- Do not strengthen or reinterpret the wording of supplied technical evidence; distinguish explicitly stated facts from inference.\n- Never describe one material, dimension, process or requirement as replacing another unless the supplied information explicitly states that it is a replacement. A comparison does not establish a substitution.\n- When Customer Required is caused by an explicit approval or deviation-acceptance request, set missing_evidence to: \"No supplied trusted context authorises the requested acceptance.\" Do not list unavailable files or possible technical sources.\n\nReturn:\n- classification\n- reason\n- missing_evidence\n- proposed_action",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        752,
+        0
+      ],
+      "id": "834ee8d9-4926-4a1e-8ca3-9a0ccb2b57a3",
+      "name": "Classify Clarification"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        272
+      ],
+      "id": "0c45d5c0-f54a-416a-ac8f-f337691af49b",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"classification\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"Resolved\",\n        \"Assisted\",\n        \"Customer Required\"\n      ]\n    },\n    \"reason\": {\n      \"type\": \"string\"\n    },\n    \"missing_evidence\": {\n      \"type\": \"string\"\n    },\n    \"proposed_action\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"classification\",\n    \"reason\",\n    \"missing_evidence\",\n    \"proposed_action\"\n  ],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        256
+      ],
+      "id": "b9cb7532-c740-4aef-87c0-6fec179edbcd",
+      "name": "Classification Output Schema"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        -208
+      ],
+      "id": "ecc8ee56-1476-4ae9-8103-7175dc988340",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prepared = $('Prepare Classification Input').item.json;\nconst output = $json.response?.output ?? $json.output ?? {};\n\nreturn {\n  json: {\n    ...prepared,\n\n    actual_classification: output.classification ?? null,\n    classification_reason: output.reason ?? null,\n    missing_evidence: output.missing_evidence ?? null,\n    proposed_action: output.proposed_action ?? null,\n\n    evaluation_pass:\n      prepared.expected_classification === null\n        ? null\n        : output.classification === prepared.expected_classification\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        32
+      ],
+      "id": "7854ed8e-2713-4e09-af74-86ef77b2dcf1",
+      "name": "Build Classification Result"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json;\n\nconst requiredStringFields = [\n  'conversation_reference',\n  'conversation_id',\n  'clarification_text',\n  'attachment_status',\n  'attachment_context',\n  'order_context_status',\n  'order_context'\n];\n\nconst allowedAttachmentStatuses = [\n  'not_referenced',\n  'referenced_not_retrieved',\n  'retrieval_failed',\n  'retrieved_not_processed',\n  'processed',\n  'processing_failed',\n  'unsupported'\n];\n\nconst allowedOrderContextStatuses = [\n  'not_supplied',\n  'not_retrieved',\n  'retrieval_failed',\n  'partial',\n  'retrieved'\n];\n\nconst errors = [];\n\nfor (const field of requiredStringFields) {\n  if (\n    typeof input[field] !== 'string' ||\n    input[field].trim() === ''\n  ) {\n    errors.push(`${field} must be a non-empty string`);\n  }\n}\n\nif (\n  typeof input.attachment_status === 'string' &&\n  !allowedAttachmentStatuses.includes(input.attachment_status)\n) {\n  errors.push(\n    `attachment_status must be one of: ${allowedAttachmentStatuses.join(', ')}`\n  );\n}\n\nif (\n  typeof input.order_context_status === 'string' &&\n  !allowedOrderContextStatuses.includes(input.order_context_status)\n) {\n  errors.push(\n    `order_context_status must be one of: ${allowedOrderContextStatuses.join(', ')}`\n  );\n}\n\nif (errors.length > 0) {\n  throw new Error(\n    `Invalid classification input: ${errors.join('; ')}`\n  );\n}\n\nreturn {\n  json: input\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -224
+      ],
+      "id": "5189e6b2-e866-45b2-b1bc-884d5d1400a2",
+      "name": "Validate Classification Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const result = $json;\n\nconst allowedClassifications = [\n  'Resolved',\n  'Assisted',\n  'Customer Required'\n];\n\nconst requiredOutputFields = [\n  'actual_classification',\n  'classification_reason',\n  'missing_evidence',\n  'proposed_action'\n];\n\nconst errors = [];\n\nfor (const field of requiredOutputFields) {\n  if (\n    typeof result[field] !== 'string' ||\n    result[field].trim() === ''\n  ) {\n    errors.push(`${field} must be a non-empty string`);\n  }\n}\n\nif (\n  typeof result.actual_classification === 'string' &&\n  !allowedClassifications.includes(result.actual_classification)\n) {\n  errors.push(\n    `actual_classification must be one of: ${allowedClassifications.join(', ')}`\n  );\n}\n\nconst hasProcessedAttachment =\n  result.attachment_status === 'processed';\n\nconst hasRetrievedOrderContext =\n  result.order_context_status === 'retrieved';\n\nconst hasAvailableTrustedEvidence =\n  hasProcessedAttachment || hasRetrievedOrderContext;\n\nif (\n  result.actual_classification === 'Resolved' &&\n  !hasAvailableTrustedEvidence\n) {\n  errors.push(\n    'Resolved requires a processed attachment or retrieved trusted order context'\n  );\n}\n\nif (\n  result.actual_classification === 'Assisted' &&\n  !hasAvailableTrustedEvidence\n) {\n  errors.push(\n    'Assisted requires available trusted evidence for specialist review'\n  );\n}\n\nif (errors.length > 0) {\n  throw new Error(\n    `Classification guardrail rejected the AI result: ${errors.join('; ')}`\n  );\n}\n\nreturn {\n  json: {\n    ...result,\n    guardrail_status: 'passed',\n    guardrail_reasons: []\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        -144
+      ],
+      "id": "c1adf48a-e54e-4517-aed9-1ba679a0e8ae",
+      "name": "Apply Classification Guardrails"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    ...$json,\n    attachment_status: 'referenced_not_retrieved',\n    order_context_status: 'not_supplied',\n    actual_classification: 'Resolved'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -304
+      ],
+      "id": "7a796643-d372-4f21-904c-18d624166399",
+      "name": "Simulate Unsafe AI Result"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Sample Clarification Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample Clarification Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare Classification Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Classification Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Classification Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Clarification",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classification Output Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Classify Clarification",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Classification Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Clarification": {
+      "main": [
+        [
+          {
+            "node": "Build Classification Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Classification Input": {
+      "main": [
+        [
+          {
+            "node": "Classify Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classification Result": {
+      "main": [
+        [
+          {
+            "node": "Apply Classification Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulate Unsafe AI Result": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": []
+}

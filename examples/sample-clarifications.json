@@ -1,0 +1,44 @@
+[
+  {
+    "test_id": "SYN-001",
+    "provenance": "synthetic",
+    "source_references": [],
+    "conversation_reference": "SYN-001",
+    "conversation_id": "SYN-001",
+    "clarification_text": "Does the plate require an M5 through-thread?",
+    "attachment_status": "processed",
+    "attachment_context": "Drawing note: M5 THRU ALL",
+    "order_context_status": "not_supplied",
+    "order_context": "No order context supplied.",
+    "expected_classification": "Resolved",
+    "expected_rationale": "The drawing explicitly specifies the thread."
+  },
+  {
+    "test_id": "SYN-006",
+    "provenance": "synthetic",
+    "source_references": [],
+    "conversation_reference": "SYN-006",
+    "conversation_id": "SYN-006",
+    "clarification_text": "Should the slot width be 8 mm or 9 mm?",
+    "attachment_status": "processed",
+    "attachment_context": "Drawing specifies slot width 8 mm; CAD specifies 9 mm. No precedence rule is supplied.",
+    "order_context_status": "not_supplied",
+    "order_context": "No order context supplied.",
+    "expected_classification": "Assisted",
+    "expected_rationale": "Conflicting sources need specialist review."
+  },
+  {
+    "test_id": "SYN-011",
+    "provenance": "synthetic",
+    "source_references": [],
+    "conversation_reference": "SYN-011",
+    "conversation_id": "SYN-011",
+    "clarification_text": "May we substitute stainless steel for the specified aluminium?",
+    "attachment_status": "processed",
+    "attachment_context": "Drawing specifies aluminium; no substitution approval is supplied.",
+    "order_context_status": "not_supplied",
+    "order_context": "No order context supplied.",
+    "expected_classification": "Customer Required",
+    "expected_rationale": "A material substitution needs customer approval."
+  }
+]

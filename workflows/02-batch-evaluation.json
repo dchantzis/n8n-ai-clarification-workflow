@@ -1,0 +1,193 @@
+{
+  "name": "02 - Batch evaluation",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -64
+      ],
+      "id": "bd8d37cf-ce4c-4ace-a49c-e28df451a3e9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/evaluation/evaluation-cases.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        -64
+      ],
+      "id": "0c54f2f4-fead-41f4-b0b6-408aac763e57",
+      "name": "Read Evaluation Cases"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "destinationKey": "Parse Evaluation Cases",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        -64
+      ],
+      "id": "e71f4521-a61a-4b23-898f-369706330632",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "Parse Evaluation Cases",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -64
+      ],
+      "id": "9ad42fbe-ece5-4c8b-9966-6e82e31d19f6",
+      "name": "Split Evaluation Cases"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        896,
+        -64
+      ],
+      "id": "46127a7f-5877-4460-b211-e3473f50da01",
+      "name": "Process Cases One at a Time"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "01 - AI clarification review"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        144
+      ],
+      "id": "57b8871e-41f7-48f3-8c80-2809b80bb7f8",
+      "name": "Classify Evaluation Case"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.all().map(item => item.json);\n\nconst classifications = [\n  'Resolved',\n  'Assisted',\n  'Customer Required'\n];\n\nconst passed = results.filter(\n  result => result.evaluation_pass === true\n);\n\nconst failed = results.filter(\n  result => result.evaluation_pass !== true\n);\n\nconst guardrailPassed = results.filter(\n  result => result.guardrail_status === 'passed'\n);\n\nconst guardrailNotPassed = results.filter(\n  result => result.guardrail_status !== 'passed'\n);\n\nconst byClassification = {};\n\nfor (const classification of classifications) {\n  const cases = results.filter(\n    result => result.expected_classification === classification\n  );\n\n  byClassification[classification] = {\n    total: cases.length,\n    passed: cases.filter(\n      result => result.evaluation_pass === true\n    ).length,\n    failed: cases.filter(\n      result => result.evaluation_pass !== true\n    ).length\n  };\n}\n\nreturn [\n  {\n    json: {\n      total_cases: results.length,\n      passed_cases: passed.length,\n      failed_cases: failed.length,\n      accuracy_percent:\n        results.length === 0\n          ? 0\n          : Number(((passed.length / results.length) * 100).toFixed(2)),\n      by_classification: byClassification,\n      failed_case_ids: failed.map(result => result.test_id),\n      guardrail_passed_cases: guardrailPassed.length,\n      guardrail_not_passed_cases: guardrailNotPassed.length,\n      guardrail_not_passed_case_ids:\n        guardrailNotPassed.map(result => result.test_id),\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -160
+      ],
+      "id": "70f315b7-f8cf-461f-a223-5383de9cfd6d",
+      "name": "Summarise Evaluation Results"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read Evaluation Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Evaluation Cases": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Split Evaluation Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Evaluation Cases": {
+      "main": [
+        [
+          {
+            "node": "Process Cases One at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Cases One at a Time": {
+      "main": [
+        [
+          {
+            "node": "Summarise Evaluation Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classify Evaluation Case",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Evaluation Case": {
+      "main": [
+        [
+          {
+            "node": "Process Cases One at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": []
+}

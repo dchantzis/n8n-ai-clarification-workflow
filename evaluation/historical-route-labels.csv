@@ -1,0 +1,7 @@
+conversation_reference,potential_route,route_reason,review_notes
+HIST-001,potential_resolved,Explicit evidence available,Synthetic example
+HIST-002,potential_assisted,Conflicting sources require review,Synthetic example
+HIST-003,customer_required,Customer approval required,Synthetic example
+HIST-004,indeterminate,Insufficient information for retrospective review,Synthetic example
+HIST-005,potential_resolved,Requirement stated in supplied context,Synthetic example
+HIST-006,customer_required,Customer preference required,Synthetic example

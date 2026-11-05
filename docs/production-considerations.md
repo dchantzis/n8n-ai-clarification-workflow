@@ -1,0 +1,3 @@
+# Production considerations
+
+The current workflows are a local proof of concept. Before production, assess authentication and authorisation, source provenance and access control, trusted document retrieval and attachment processing, human review and approval, audit logging, observability and alerting. Add prompt and model versioning, error handling and retries, rate limits, monitoring, a controlled rollout and kill switch, and representative production evaluation. These are prospective capabilities, not claims about the current implementation. Review data governance, model output safety, costs and operational ownership with the relevant stakeholders.

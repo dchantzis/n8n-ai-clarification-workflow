@@ -1,0 +1,97 @@
+{
+  "name": "03 - Historical deflection KPI",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0451be3d-eca3-418a-8d7e-78472e89501c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/evaluation/historical-route-labels.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "b3232420-550a-4354-9b5a-1d1005639941",
+      "name": "Read Historical Route Labels"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "79faf95c-11c4-4189-b883-05bbf9293157",
+      "name": "Extract Historical Route Labels"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cases = $input.all().map(item => item.json);\n\nconst allowedRoutes = [\n  'potential_resolved',\n  'potential_assisted',\n  'customer_required',\n  'indeterminate'\n];\n\nconst invalidCases = cases.filter(item =>\n  !allowedRoutes.includes(item.potential_route)\n);\n\nif (invalidCases.length > 0) {\n  throw new Error(\n    `Invalid potential_route values for: ${\n      invalidCases\n        .map(item => item.conversation_reference || 'unknown')\n        .join(', ')\n    }`\n  );\n}\n\nconst countByRoute = {};\n\nfor (const route of allowedRoutes) {\n  countByRoute[route] = cases.filter(\n    item => item.potential_route === route\n  ).length;\n}\n\nconst eligibleCases = cases.length;\n\nconst potentiallyDeflectedCases =\n  countByRoute.potential_resolved +\n  countByRoute.potential_assisted;\n\nconst potentialDeflectionPercent =\n  eligibleCases === 0\n    ? 0\n    : Number(\n        (\n          (potentiallyDeflectedCases / eligibleCases) *\n          100\n        ).toFixed(2)\n      );\n\nreturn [\n  {\n    json: {\n      eligible_cases: eligibleCases,\n      route_counts: countByRoute,\n      potentially_deflected_cases: potentiallyDeflectedCases,\n      potential_deflection_percent: potentialDeflectionPercent\n\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        0
+      ],
+      "id": "6dc48c07-3570-4317-b05a-5a016643f21d",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read Historical Route Labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Historical Route Labels": {
+      "main": [
+        [
+          {
+            "node": "Extract Historical Route Labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Historical Route Labels": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": []
+}
